@@ -33,6 +33,18 @@ func (r *Runner) Restart() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	now := time.Now()
+	if now.Sub(r.lastRestartTime) < 2*time.Second {
+		r.rapidRestartCount++
+		if r.rapidRestartCount > 3 {
+			slog.Warn("Detected rapid restart loop. Throttling rebuild...")
+			time.Sleep(2 * time.Second)
+		}
+	} else {
+		r.rapidRestartCount = 0
+	}
+	r.lastRestartTime = now
+
 	r.killActiveProcess()
 
 	slog.Info("Starting build process...")
